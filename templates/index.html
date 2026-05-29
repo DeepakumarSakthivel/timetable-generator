@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIMETABLE GENERATOR - CIET</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f4f4f4; }
+        .ciet-logo { display: block; margin: 30px auto 10px auto; max-width: 120px; }
+        .main-title { color: #333; font-weight: 700; text-align: center; margin-bottom: 10px; }
+        .subtitle { color: #555; text-align: center; margin-bottom: 30px; }
+        .timetable-cell { min-width: 120px; height: 60px; border: 1px solid #b0b0b0; padding: 5px; text-align: center; vertical-align: middle; background: #fff; color: #222; }
+        .lab-cell { background-color: #e0e0e0; color: #222; font-weight: 600; }
+        .break-cell { background-color: #d6d6d6; text-align: center; vertical-align: middle; font-weight: 500; color: #444; }
+        .btn-primary, .btn-secondary, .btn-success { background: linear-gradient(90deg, #757575 0%, #424242 100%); border: none; color: #fff; }
+        .btn-primary:hover, .btn-secondary:hover, .btn-success:hover { background: linear-gradient(90deg, #424242 0%, #757575 100%); color: #fff; }
+        .card { border-radius: 18px; box-shadow: 0 2px 12px #bdbdbd; margin-bottom: 20px; border: 1px solid #b0b0b0; }
+        .form-label { color: #333; font-weight: 500; }
+        .timetable-header { background: linear-gradient(90deg, #e0e0e0 0%, #f4f4f4 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #b0b0b0; }
+        .timetable-header h6 { color: #222; font-weight: 600; margin-bottom: 8px; }
+        .timetable-header span { color: #555; font-weight: 500; margin-left: 5px; }
+        .timetable-header .col-md-3 { border-right: 1px solid #b0b0b0; padding-right: 20px; }
+        .timetable-header .col-md-3:last-child { border-right: none; }
+        .table { margin-bottom: 0; background: #fff; }
+        .table th { background-color: #d6d6d6; color: #222; font-weight: 600; text-align: center; vertical-align: middle; }
+        .subject-input-group { background-color: #f4f4f4; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #b0b0b0; }
+        #facultySubjectsTable .table th, #facultySubjectsTable .table td { background: #fafafa; color: #222; border: 1px solid #b0b0b0; }
+        #facultySubjectsTable .table th { background: #e0e0e0; }
+        @media (max-width: 768px) { .timetable-header .col-md-3 { border-right: none; border-bottom: 1px solid #b0b0b0; padding-bottom: 15px; margin-bottom: 15px; } .timetable-header .col-md-3:last-child { border-bottom: none; margin-bottom: 0; } .timetable-cell { min-width: 100px; } }
+    </style>
+</head>
+<body>
+    <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
+        <a href="/admin" class="btn btn-primary" style="background-color: #6f42c1; border: none; margin-top: 10px;">Admin Panel</a>
+    </div>
+    <div class="container mt-4">
+        <!-- <img src="images/cietlogo.PNG" alt="CIET Logo" class="ciet-logo"> -->
+        <h1 class="main-title">TIMETABLE GENERATOR</h1>
+        <!-- <div class="subtitle">Coimbatore Institute of Engineering and Technology</div> -->
+        <!-- Input Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Generate New Timetable</h5>
+                <form id="timetableForm">
+                    <!-- Basic Information -->
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Department</label>
+                            <input type="text" class="form-control" name="department" placeholder="e.g. CSE" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Sections & Hall Numbers</label>
+                            <div id="sectionsContainer">
+                                <div class="input-group mb-2 section-row">
+                                    <input type="text" class="form-control section-name" name="sections[]" placeholder="Section (e.g. A)" required>
+                                    <input type="text" class="form-control section-hall" name="section_halls[]" placeholder="Hall No. (e.g. 306)" required>
+                                    <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()">Remove</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="addSection()">Add Section</button>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Year</label>
+                            <input type="text" class="form-control" name="year" placeholder="e.g. III" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Batch</label>
+                            <input type="text" class="form-control" name="batch" placeholder="e.g. 2022-2026" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Semester</label>
+                            <input type="text" class="form-control" name="semester" placeholder="e.g. VI" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">W.E.F. (With Effect From)</label>
+                            <input type="date" class="form-control" name="wef" required>
+                        </div>
+                    </div>
+                    <!-- Subjects -->
+                    <div class="mb-3">
+                        <label class="form-label">Subjects</label>
+                        <div id="subjectsContainer">
+                            <div class="subject-input-group">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" name="subject_code[]" placeholder="Subject Code" required>
+                                    <input type="text" class="form-control" name="subject_name[]" placeholder="Subject Name" required>
+                                    <input type="number" class="form-control" name="subject_credits[]" placeholder="Credits" min="0" required>
+                                    <input type="text" class="form-control" name="subject_faculty[]" placeholder="Faculty Name" required>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="subject_is_lab[]">
+                                        <label class="form-check-label">Lab</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="subject_embedded[]">
+                                        <label class="form-check-label">Embedded</label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.parentElement.remove()">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addSubject()">Add Subject</button>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Generate Timetable</button>
+                </form>
+            </div>
+        </div>
+        <!-- Timetable Display -->
+        <div id="timetableDisplay" class="d-none">
+            <div class="card">
+                <div class="card-body">
+                    <div class="timetable-header mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6 class="mb-1">Department: <span id="displayDepartment"></span></h6>
+                                <h6 class="mb-1">Section: <span id="displaySection"></span></h6>
+                                <h6 class="mb-1">Year: <span id="displayYear"></span></h6>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="mb-1">Hall No: <span id="displayHallNo"></span></h6>
+                                <h6 class="mb-1">Batch: <span id="displayBatch"></span></h6>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="mb-1">Semester: <span id="displaySemester"></span></h6>
+                                <h6 class="mb-1">W.E.F: <span id="displayWef"></span></h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="timetableExport">
+                        <h5 class="card-title">Generated Timetable</h5>
+                        <div id="timetableContent"></div>
+                    </div>
+                    <div class="mt-3">
+                        <a id="downloadPdf" href="#" class="btn btn-success">Download PDF</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Faculty-Subject Mapping -->
+        <div id="facultySubjectsTable" class="d-none">
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Faculty-Subject Mapping</h5>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Course Code</th>
+                                <th>Course Title</th>
+                                <th>Faculty Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Add new section input
+        function addSection() {
+            const container = document.getElementById('sectionsContainer');
+            const newSection = document.createElement('div');
+            newSection.className = 'input-group mb-2 section-row';
+            newSection.innerHTML = `
+                <input type="text" class="form-control section-name" name="sections[]" placeholder="Section (e.g. A)" required>
+                <input type="text" class="form-control section-hall" name="section_halls[]" placeholder="Hall No. (e.g. 306)" required>
+                <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()">Remove</button>
+            `;
+            container.appendChild(newSection);
+        }
+        // Add new subject input
+        function addSubject() {
+            const container = document.getElementById('subjectsContainer');
+            const newSubject = document.createElement('div');
+            newSubject.className = 'subject-input-group';
+            newSubject.innerHTML = `
+                <div class="input-group mb-2">
+                    <input type="text" class="form-control" name="subject_code[]" placeholder="Subject Code" required>
+                    <input type="text" class="form-control" name="subject_name[]" placeholder="Subject Name" required>
+                    <input type="number" class="form-control" name="subject_credits[]" placeholder="Credits" min="0" required>
+                    <input type="text" class="form-control" name="subject_faculty[]" placeholder="Faculty Name" required>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="subject_is_lab[]">
+                        <label class="form-check-label">Lab</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="subject_embedded[]">
+                        <label class="form-check-label">Embedded</label>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.parentElement.remove()">Remove</button>
+                </div>
+            `;
+            container.appendChild(newSubject);
+        }
+        // Handle form submission
+        document.getElementById('timetableForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Collect form data
+            const sectionNames = Array.from(document.querySelectorAll('.section-name')).map(input => input.value);
+            const sectionHalls = Array.from(document.querySelectorAll('.section-hall')).map(input => input.value);
+            window.lastSectionNames = sectionNames;
+            window.lastSectionHalls = sectionHalls;
+            const formData = {
+                department: document.querySelector('input[name="department"]').value,
+                sections: sectionNames,
+                section_halls: sectionHalls,
+                year: document.querySelector('input[name="year"]').value,
+                batch: document.querySelector('input[name="batch"]').value,
+                semester: document.querySelector('input[name="semester"]').value,
+                wef: document.querySelector('input[name="wef"]').value,
+                subjects: Array.from(document.querySelectorAll('input[name="subject_name[]"]')).map((input, index) => ({
+                    code: document.querySelectorAll('input[name="subject_code[]"]')[index].value,
+                    name: input.value,
+                    credits: parseInt(document.querySelectorAll('input[name="subject_credits[]"]')[index].value),
+                    faculty: document.querySelectorAll('input[name="subject_faculty[]"]')[index].value,
+                    is_lab: document.querySelectorAll('input[name="subject_is_lab[]"]')[index].checked,
+                    embedded: document.querySelectorAll('input[name="subject_embedded[]"]')[index].checked
+                }))
+            };
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('displayDepartment').textContent = formData.department;
+                    document.getElementById('displaySection').textContent = formData.sections.join(', ');
+                    document.getElementById('displayYear').textContent = formData.year;
+                    document.getElementById('displayHallNo').textContent = formData.section_halls.join(', ');
+                    document.getElementById('displayBatch').textContent = formData.batch;
+                    document.getElementById('displaySemester').textContent = formData.semester;
+                    document.getElementById('displayWef').textContent = new Date(formData.wef).toLocaleDateString();
+                    displayTimetables(data.timetables);
+                    document.getElementById('downloadPdf').href = data.pdf_url;
+                    document.getElementById('timetableDisplay').classList.remove('d-none');
+                    if (data.faculty_subjects) {
+                        displayFacultySubjects(data.faculty_subjects);
+                    }
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error generating timetable: ' + error.message);
+            }
+        });
+        // Display timetables
+        function displayTimetables(timetables) {
+            console.log('--- DEBUG: Timetables received by frontend ---');
+            console.log(timetables);
+            const sessionTimes = [
+                '9:00-9:50', '9:50-10:40', 'TEABREAK', '11:00-11:50', '11:50-12:40', 'LUNCH', '1:45-2:30', '2:30-3:15', '3:15-4:00'
+            ];
+            const sessionLabels = [
+                'Session I', 'Session II', '', 'Session III', 'Session IV', '', 'Session V', 'Session VI', 'Session VII'
+            ];
+            const breakSlots = [2, 5];
+            const container = document.getElementById('timetableContent');
+            container.innerHTML = '';
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            for (const [section, timetable] of Object.entries(timetables)) {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'mb-4';
+                // Find the hall number for this section
+                let hallNo = '';
+                if (window.lastSectionNames && window.lastSectionHalls) {
+                    const idx = window.lastSectionNames.indexOf(section);
+                    if (idx !== -1) hallNo = window.lastSectionHalls[idx];
+                }
+                // Create the summary box
+                sectionDiv.innerHTML = `
+                    <div class="timetable-header mb-3" style="background: #ededed; border-radius: 12px; padding: 18px 24px; border: 1px solid #b0b0b0;">
+                        <div class="row">
+                            <div class="col-md-3"><b>Department:</b> ${document.querySelector('input[name="department"]').value}<br>
+                                <b>Section:</b> ${section}<br>
+                                <b>Year:</b> ${document.querySelector('input[name="year"]').value}
+                            </div>
+                            <div class="col-md-3"><b>Hall No:</b> ${hallNo}<br>
+                                <b>Batch:</b> ${document.querySelector('input[name="batch"]').value}
+                            </div>
+                            <div class="col-md-3"><b>Semester:</b> ${document.querySelector('input[name="semester"]').value}<br>
+                                <b>W.E.F:</b> ${new Date(document.querySelector('input[name="wef"]').value).toLocaleDateString()}
+                            </div>
+                        </div>
+                    </div>
+                    <h4>${section}</h4>
+                `;
+                const table = document.createElement('table');
+                table.className = 'table table-bordered';
+                const thead = document.createElement('thead');
+                let headerRow = '<tr><th>Day</th>';
+                for (let i = 0; i < sessionLabels.length; i++) {
+                    if (breakSlots.includes(i)) {
+                        headerRow += `<th class="break-cell">${sessionLabels[i] === '' ? (i === 2 ? 'TEABREAK' : 'LUNCH') : sessionLabels[i]}</th>`;
+                    } else {
+                        headerRow += `<th>${sessionLabels[i]}<br><span style='font-weight:normal'>${sessionTimes[i]}</span></th>`;
+                    }
+                }
+                headerRow += '</tr>';
+                thead.innerHTML = headerRow;
+                table.appendChild(thead);
+                const tbody = document.createElement('tbody');
+                for (let day = 0; day < days.length; day++) {
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${days[day]}</td>`;
+                    let skip = 0;
+                    let rowDebug = [];
+                    for (let s = 0; s < sessionLabels.length; s++) {
+                        if (skip > 0) { skip--; continue; }
+                        if (breakSlots.includes(s)) {
+                            tr.innerHTML += `<td class="break-cell">${sessionLabels[s] === '' ? (s === 2 ? 'TEABREAK' : 'LUNCH') : sessionLabels[s]}</td>`;
+                            rowDebug.push('BREAK');
+                        } else {
+                            let cell = (Array.isArray(timetable[s]) && timetable[s][day] !== undefined) ? timetable[s][day] : '-';
+                            let isLab = false;
+                            let labSpan = 1;
+                            if (window.lastSubjects && window.lastSubjects.length > 0) {
+                                for (let subj of window.lastSubjects) {
+                                    if (cell === `${subj.name} LAB`) {
+                                        isLab = true;
+                                        labSpan = subj.embedded ? 2 : 3;
+                                        // Check how many consecutive cells match this lab
+                                        for (let k = 1; k < labSpan; k++) {
+                                            if (s + k >= sessionLabels.length || timetable[s + k][day] !== cell) {
+                                                labSpan = k;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                            if (isLab) {
+                                tr.innerHTML += `<td class="timetable-cell lab-cell" colspan="${labSpan}">${cell}</td>`;
+                                rowDebug.push(cell + ` (colspan ${labSpan})`);
+                                skip = labSpan - 1;
+                            } else if (cell && cell !== 'BREAK/LUNCH' && cell !== '-') {
+                                tr.innerHTML += `<td class="timetable-cell">${cell}</td>`;
+                                rowDebug.push(cell);
+                            } else {
+                                tr.innerHTML += `<td class="timetable-cell">-</td>`;
+                                rowDebug.push('-');
+                            }
+                        }
+                    }
+                    console.log(`Row for ${days[day]}:`, rowDebug);
+                    tbody.appendChild(tr);
+                }
+                table.appendChild(tbody);
+                sectionDiv.appendChild(table);
+                container.appendChild(sectionDiv);
+            }
+        }
+        // Display faculty-subject mapping
+        function displayFacultySubjects(facultySubjects) {
+            const container = document.getElementById('facultySubjectsTable');
+            container.classList.remove('d-none');
+            const tbody = container.querySelector('tbody');
+            tbody.innerHTML = '';
+            let idx = 1;
+            for (const [subject, faculty] of Object.entries(facultySubjects)) {
+                // subject is in the format 'CODE - TITLE'
+                let code = subject.split(' - ')[0] || '';
+                let title = subject.split(' - ').slice(1).join(' - ') || '';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:600; color:#333;">${idx}</td>
+                    <td>${code}</td>
+                    <td>${title}</td>
+                    <td style="color:#444;">${faculty}</td>
+                `;
+                tbody.appendChild(tr);
+                idx++;
+            }
+        }
+        document.getElementById('timetableForm').addEventListener('submit', function(e) {
+            window.lastSubjects = Array.from(document.querySelectorAll('input[name="subject_name[]"]')).map((input, index) => ({
+                code: document.querySelectorAll('input[name="subject_code[]"]')[index].value,
+                name: input.value,
+                is_lab: document.querySelectorAll('input[name="subject_is_lab[]"]')[index].checked,
+                embedded: document.querySelectorAll('input[name="subject_embedded[]"]')[index].checked
+            }));
+        });
+    </script>
+</body>
+</html>
